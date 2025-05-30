@@ -52,7 +52,7 @@ def get_users(db: Session = Depends(get_db)):
 #Update User
 @app.put("/users/{user_id}", response_model = schema.UserResponse)
 
-async def update_user(user_id: int, user: schema.UserCreate, db: Session = Depends(get_db)):
+def update_user(user_id: int, user: schema.UserCreate, db: Session = Depends(get_db)):
     db_update_user = db.query(model.UserDB).filter(model.UserDB.id == user_id).first()
 
     if db_update_user is None:
@@ -68,7 +68,7 @@ async def update_user(user_id: int, user: schema.UserCreate, db: Session = Depen
 #Delete User
 @app.delete("/users/{user_id}", response_model = schema.UserResponse)
 
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: int, db: Session = Depends(get_db)):
     db_delete_user = db.query(model.UserDB).filter(model.UserDB.id == user_id).first()
 
     if db_delete_user is None:
@@ -78,5 +78,43 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     return db_delete_user
 
+#Create Item
+@app.post("/items", response_model = schema.ItemResponse)
 
+def create_item(item: schema.ItemCreate, db: Session = Depends(get_db)):
 
+    existing_item = db.query(model.ItemDB).filter(
+        model.ItemDB.owner_id == item.owner_id,
+        model.ItemDB.title == item.title
+    ).first()
+
+    if existing_item:
+        raise HTTPException(status_code = 400, detail = "Item already exists")
+    
+    db_item_orm = model.ItemDB(
+        title = item.title,
+        description = item.description,
+        owner_id = item.owner_id
+    )
+
+    db.add(db_item_orm)
+    db.commit()
+    db.refresh(db_item_orm)
+    return db_item_orm
+
+#Get Items by User
+@app.get("/users/{user_id}/items", response_model = List[schema.ItemResponse])
+
+def get_items(user_id: int, db: Session = Depends(get_db)):
+    db_get_item = db.query(model.ItemDB).filter(model.ItemDB.owner_id == user_id).all()
+    return db_get_item
+
+@app.get("/items/{item_id}", response_model = schema.ItemResponse)
+
+def get_item(item_id: int, db: Session = Depends(get_db)):
+    db_get_item = db.query(model.ItemDB).filter(model.ItemDB.id == item_id).first()
+
+    if db_get_item is None:
+        raise HTTPException(status_code = 404, detail = "Item not found")
+    
+    return db_get_item

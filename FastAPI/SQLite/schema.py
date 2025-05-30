@@ -7,6 +7,7 @@ from typing import List, Optional
 class ItemBase(BaseModel):
     title: str
     description: Optional[str] = None
+    owner_id: int
 
 #Request model
 class ItemCreate(ItemBase):
