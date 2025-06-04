@@ -1,9 +1,11 @@
 #!/bin/bash
 
 source /opt/venv/bin/activate
-
 cd /code
-RUN_PORT=${PORT:-8000}
-RUN_HOST=${HOST:-0.0.0.0}
 
-gunicorn -k uvicorn.workers.UvicornWorker -b $RUN_HOST:$RUN_PORT main:app
+export PYTHONPATH=/code
+gunicorn main:app \
+  --workers 2 \
+  --worker-class uvicorn.workers.UvicornWorker \
+  --bind 0.0.0.0:${PORT:-8000}
+

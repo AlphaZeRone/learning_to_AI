@@ -29,7 +29,7 @@ WORKDIR /code
 
 COPY requirements.txt /tmp/requirements.txt
 
-COPY ./src /code
+COPY ./src /code/src
 
 RUN pip install -r /tmp/requirements.txt
 
@@ -44,5 +44,8 @@ RUN apt-get remove --purge -y \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
+ENV PYTHONPATH=/code
+
 CMD ["/opt/run.sh"]
+
 
