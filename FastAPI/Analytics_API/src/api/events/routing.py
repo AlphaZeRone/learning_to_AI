@@ -8,7 +8,8 @@ from .models import (
     EventModel, 
     EventListSchema, 
     EventCreateSchema,
-    EventUpdateSchema
+    EventUpdateSchema,
+    get_utc_now
 )
 
 router = APIRouter()
@@ -20,7 +21,7 @@ from ..db.config import DATABASE_URL
 def read_events(session: Session = Depends(get_session)):
 
 #sort query by id and up by id
-    query = select(EventModel).order_by(EventModel.id.asc()).limit(10)
+    query = select(EventModel).order_by(EventModel.updated_at.desc()).limit(10)
     results = session.exec(query).all()
     #list of events
     print(os.environ.get("DATABASE_URL", DATABASE_URL))
@@ -65,6 +66,7 @@ def update_event(event_id:int, payload:EventUpdateSchema, session:Session = Depe
     data = payload.model_dump()
     for k, v in data.items():
         setattr(obj, k, v)
+    obj.updated_at = get_utc_now()
     session.add(obj)
     session.commit()
     session.refresh(obj)
