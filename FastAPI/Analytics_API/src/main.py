@@ -5,8 +5,12 @@ from fastapi import FastAPI
 from api.events import router as event_router
 from api.db.session import init_db
 
+import time
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("⏳ Waiting for DB to boot fully...")
+    time.sleep(5)
     init_db()
     yield
 

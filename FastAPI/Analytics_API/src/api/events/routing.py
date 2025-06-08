@@ -1,12 +1,16 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
+from sqlalchemy import func
+from datetime import datetime, timedelta, timezone
+from timescaledb.hyperfunctions import time_bucket
+from typing import List
 
 from api.db.session import get_session
 
 from .models import (
     EventModel, 
-    EventListSchema, 
+    EventBucketSchema, 
     EventCreateSchema,
     EventUpdateSchema,
     get_utc_now
@@ -17,18 +21,32 @@ from ..db.config import DATABASE_URL
 
 # LIST VIEW
 # GET /api/events
-@router.get("/", response_model=EventListSchema)
+@router.get("/", response_model=List[EventBucketSchema])
 def read_events(session: Session = Depends(get_session)):
 
 #sort query by id and up by id
-    query = select(EventModel).order_by(EventModel.updated_at.desc()).limit(10)
-    results = session.exec(query).all()
-    #list of events
-    print(os.environ.get("DATABASE_URL", DATABASE_URL))
-    return {
-        "results": results,
-        "count": len(results)
-    }
+    bucket = time_bucket("1 day", EventModel.time)
+    start = datetime.now(timezone.utc) - timedelta(hours = 5)
+    finish = datetime.now(timezone.utc) + timedelta(hours = 5)
+    query = select(
+        bucket, 
+        EventModel.page,
+        func.count()
+        ).where(
+            EventModel.time > start,
+            EventModel.time <= finish,
+        ).group_by(
+            bucket, 
+            EventModel.page
+        ).order_by(
+            bucket, 
+            EventModel.page
+        )
+    results = session.exec(query).fetchall()
+    formatted = [
+        EventBucketSchema(bucket=r[0], page=r[1], count=r[2]) for r in results
+    ]
+    return formatted
 
 @router.get("/{event_id}", response_model=EventModel)
 def get_event(event_id: int, session: Session = Depends(get_session)):

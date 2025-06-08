@@ -19,6 +19,12 @@ frontend/.yarn/build-state.yml
 frontend/.yarn/install-state.gz
 frontend/coverage/
 
+# FastAPI
+.env
+.env.compose
+nbs/
+
+
 # OS generated files
 .DS_Store
 Thumbs.db
